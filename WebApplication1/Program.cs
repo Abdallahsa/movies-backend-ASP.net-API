@@ -15,6 +15,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IGenresService, GenresService>();
+builder.Services.AddScoped<IMoviceService, MoviceService>();
+builder.Services.AddAutoMapper(typeof(Program));
 
 var app = builder.Build();
 

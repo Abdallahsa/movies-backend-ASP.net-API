@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Runtime.Versioning;
@@ -16,19 +17,24 @@ namespace WebApplication1.Controllers
         
         private readonly IMoviceService _moviceService;
         private readonly IGenresService _genresService;
+        private readonly IMapper _mapper;
         private new List<string> _AllowedExtention=new List<string> {".png",".jpg"};
         private long _maxSize = 1024*1024;
-        public MoviesController(IMoviceService moviceService)
+        public MoviesController(IMoviceService moviceService, IGenresService genresService, IMapper mapper)
         {
             _moviceService = moviceService;
+            _genresService = genresService;
+            _mapper = mapper;
 
         }
 
         [HttpGet]
         public async Task<IActionResult> GitAllAsync()
         {
-            var movies = await _moviceService.GitAll();
-            return Ok(movies);
+            var movies = await _moviceService.GetAll();
+            var x = _mapper.Map<IEnumerable<ShowMovieDto>>(movies);
+            return Ok(x);
+             
         }
         [HttpGet("{id}")]
         public async Task<IActionResult> GetByIdAsync(int id)
@@ -43,11 +49,8 @@ namespace WebApplication1.Controllers
         [HttpGet("GetByIdGenre/{id}")]
         public async Task<IActionResult> GetByIdGenreAsync(int id)
         {
-          var genre=await _moviceService.GetByIdGenre(id);
-            if(genre == null)
-            {
-                return NotFound();
-            }
+          var genre=await _moviceService.GetAll(id);
+            
             return Ok(genre);
         }
         [HttpPost]
@@ -60,7 +63,8 @@ namespace WebApplication1.Controllers
             {
                 return BadRequest("the maximum size is 1M ");
             }
-             var _isValid= _genresService.IsExists(dto.GenreId);
+            var _isValid = await _genresService.Isvalid(dto.GenreId);
+
             if (!_isValid)
             {
                 return BadRequest("the genre is not valid");
@@ -102,7 +106,7 @@ namespace WebApplication1.Controllers
                 await dto.poster.CopyToAsync(dataStream);
                 movie.poster = dataStream.ToArray();
             }
-            var _isValid =  _genresService.IsExists(id);
+            var _isValid = await _genresService.Isvalid(id);
             if (!_isValid)
             {
                 return BadRequest("the genre is not valid");

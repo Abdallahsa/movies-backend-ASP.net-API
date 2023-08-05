@@ -47,14 +47,14 @@ namespace WebApplication1.Services
             
         }
 
-        public async Task<IEnumerable<Genre>> GitAll()
+        public async Task<IEnumerable<Genre>> GitAll(int id = 0)
         {
             return await _context.Genres.OrderBy(x => x.Name).ToListAsync();
         }
 
-        public bool IsExists(int id)
+        public  Task<bool> Isvalid(int id)
         {
-            return _context.Genres.Any(x => x.Id == id);
+            return  _context.Genres.AnyAsync(x => x.Id == id);
         }
 
         public Genre Update(Genre genre)

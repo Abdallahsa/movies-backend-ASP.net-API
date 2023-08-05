@@ -24,7 +24,9 @@ namespace WebApplication1.Services
 
         public Movie Delete(Movie movie)
         {
-            return _context.Movies.Remove(movie).Entity;
+             _context.Movies.Remove(movie);
+            _context.SaveChanges();
+            return movie;
         }
 
         public async Task<Movie> GetById(int id)
@@ -33,17 +35,12 @@ namespace WebApplication1.Services
             
         }
 
-        public async Task<IActionResult> GetByIdGenre(int id)
-        {
-          var genre = await _context.Movies.DefaultIfEmpty().Where(x => x.GenreId == id).ToListAsync();
-               
-                return new OkObjectResult(genre);
-        }
+        
 
 
-        public async Task<IEnumerable<Movie>> GitAll()
+        public async Task<IEnumerable<Movie>> GetAll(int id = 0)
         {
-            return await _context.Movies.OrderBy(x =>x.rate).ToListAsync();
+            return await _context.Movies.Include(x=>x.Genre).Where(x=>x.GenreId==id ||id==0).OrderBy(x =>x.rate).ToListAsync();
         }
 
         public Movie Update(Movie movie)
