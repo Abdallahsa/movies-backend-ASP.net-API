@@ -5,6 +5,7 @@ using System.Runtime.Versioning;
 using WebApplication1.Data;
 using WebApplication1.Dtos;
 using WebApplication1.Models;
+using WebApplication1.Services;
 
 namespace WebApplication1.Controllers
 {
@@ -12,25 +13,27 @@ namespace WebApplication1.Controllers
     [ApiController]
     public class MoviesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        
+        private readonly IMoviceService _moviceService;
+        private readonly IGenresService _genresService;
         private new List<string> _AllowedExtention=new List<string> {".png",".jpg"};
         private long _maxSize = 1024*1024;
-        public MoviesController(ApplicationDbContext context)
+        public MoviesController(IMoviceService moviceService)
         {
-            _context = context;
+            _moviceService = moviceService;
 
         }
 
         [HttpGet]
         public async Task<IActionResult> GitAllAsync()
         {
-            var movies = await _context.Movies.Include(x =>x.Genre).OrderBy(x => x.rate).ToListAsync();
+            var movies = await _moviceService.GitAll();
             return Ok(movies);
         }
         [HttpGet("{id}")]
         public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var movie = await _context.Movies.FindAsync( id);
+            var movie = await _moviceService.GetById(id);
             if (movie == null)
             {
                 return NotFound();
@@ -40,7 +43,7 @@ namespace WebApplication1.Controllers
         [HttpGet("GetByIdGenre/{id}")]
         public async Task<IActionResult> GetByIdGenreAsync(int id)
         {
-          var genre=await _context.Movies.DefaultIfEmpty().Where(x=>x.GenreId==id).ToListAsync();
+          var genre=await _moviceService.GetByIdGenre(id);
             if(genre == null)
             {
                 return NotFound();
@@ -57,7 +60,7 @@ namespace WebApplication1.Controllers
             {
                 return BadRequest("the maximum size is 1M ");
             }
-             var _isValid=await _context.Genres.AnyAsync(x => x.Id == dto.GenreId);
+             var _isValid= _genresService.IsExists(dto.GenreId);
             if (!_isValid)
             {
                 return BadRequest("the genre is not valid");
@@ -73,14 +76,14 @@ namespace WebApplication1.Controllers
                 Storeline = dto.Storeline,
                 poster = dataStream.ToArray()
             };
-            await _context.Movies.AddAsync(movie);
-            _context.SaveChanges();
+            await _moviceService.Create(movie);
+            
             return Ok(movie);
         }
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateAsync(int id, [FromForm] CreateMovieDto dto)
         {
-            var movie = await _context.Movies.FindAsync(id);
+            var movie = await _moviceService.GetById(id);
             if (movie == null)
             {
                 return NotFound();
@@ -99,7 +102,7 @@ namespace WebApplication1.Controllers
                 await dto.poster.CopyToAsync(dataStream);
                 movie.poster = dataStream.ToArray();
             }
-            var _isValid = await _context.Genres.AnyAsync(x => x.Id == dto.GenreId);
+            var _isValid =  _genresService.IsExists(id);
             if (!_isValid)
             {
                 return BadRequest("the genre is not valid");
@@ -110,21 +113,20 @@ namespace WebApplication1.Controllers
             movie.Year = dto.Year;
             movie.rate = dto.rate;
             movie.Storeline = dto.Storeline;
-           
-            await _context.SaveChangesAsync();
+            _moviceService.Update(movie);
             return Ok(movie);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteAsync(int id)
         {
-            var movie = await _context.Movies.FindAsync(id);
+            var movie = await _moviceService.GetById(id);
             if (movie == null)
             {
                 return NotFound();
             }
-            _context.Movies.Remove(movie);
-            await _context.SaveChangesAsync();
+            _moviceService.Delete(movie);
+            
             return Ok(movie);
         }
     }
